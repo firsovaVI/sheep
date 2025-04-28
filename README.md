@@ -1,4 +1,3 @@
 # sheep
-![image](https://github.com/user-attachments/assets/9cd6170c-46b1-4ff5-a541-d209c1e5764c)
-![image](https://github.com/user-attachments/assets/81eb642e-368e-4874-95ba-bf9503313e3a)
+![image](https://github.com/user-attachments/assets/7bb7c60d-68c9-4206-92a8-c03e908f88df)
 
