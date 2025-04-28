@@ -41,11 +41,19 @@ def evaluate_population(population, objective_function):
         print(f"Error in evaluate_population: {e}")
         return np.ones(len(population)) * float('inf')
 
+
 def select(population, new_population, fitness, new_fitness):
     try:
         pop_size = population.shape[0]
         selected_population = np.zeros_like(population)
         selected_fitness = np.zeros_like(fitness)
+
+        # Убедимся, что fitness и new_fitness - одномерные массивы
+        if fitness.ndim > 1:
+            fitness = fitness[:, 0]  # Берем только RMSE для сравнения
+        if new_fitness.ndim > 1:
+            new_fitness = new_fitness[:, 0]
+
         for i in range(pop_size):
             if new_fitness[i] < fitness[i]:
                 selected_population[i] = new_population[i]
@@ -55,5 +63,5 @@ def select(population, new_population, fitness, new_fitness):
                 selected_fitness[i] = fitness[i]
         return selected_population, selected_fitness
     except Exception as e:
-        print(f"Error in select: {e}")
+        print(f"Error in select: {str(e)}")
         return population, fitness
