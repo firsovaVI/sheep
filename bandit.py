@@ -19,3 +19,6 @@ class BernoulliBandit(Bandit):
 
     def generate_reward(self, i):
         return 1 if np.random.random() < self.probas[i] else 0
+
+    def generate_reward(self, i):
+        return 1 if np.random.random() < self.probas[i] else 0
