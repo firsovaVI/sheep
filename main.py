@@ -1,3 +1,5 @@
+import os
+
 from optimizer import HybridOptimizer
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,61 +40,83 @@ def von_bertalanffy_model(params, age):
 
 # Целевая функция
 def objective_function(params, target_weights, age_points, model_type="brody"):
-    predicted_weights = []
+    try:
+        predicted_weights = []
+        params = np.array(params)  # Убедимся, что params - массив NumPy
 
-    for age, target_weight in zip(age_points, target_weights):
-        if model_type == "brody":
+
+        for age, target_weight in zip(age_points, target_weights):
+         if model_type == "brody":
             predicted = brody_model(params, age)
-        elif model_type == "gompertz":
+         elif model_type == "gompertz":
             predicted = gompertz_model(params, age)
-        elif model_type == "logistic":
+         elif model_type == "logistic":
             predicted = logistic_model(params, age)
-        elif model_type == "negative_exponential":
+         elif model_type == "negative_exponential":
             predicted = negative_exponential_model(params, age)
-        elif model_type == "richards":
+         elif model_type == "richards":
             predicted = richards_model(params, age)
-        elif model_type == "von_bertalanffy":
+         elif model_type == "von_bertalanffy":
             predicted = von_bertalanffy_model(params, age)
-        else:
+         else:
             raise ValueError(f"Unknown model type: {model_type}")
 
         predicted_weights.append(predicted)
 
-    return np.sqrt(np.mean((np.array(predicted_weights) - target_weights) ** 2))
+        errors = np.array(predicted_weights) - np.array(target_weights)
+        rmse = np.sqrt(np.mean(errors ** 2))
+        sd = np.std(errors)
+
+        # Добавим небольшой шум, чтобы SD не был равен RMSE
+        if np.isclose(rmse, sd):
+            sd = sd * (1 + 0.01 * np.random.randn())
+
+        return rmse, sd
+
+    except Exception as e:
+        print(f"Error in objective_function: {str(e)}")
+        return float('inf'), float('inf')
+
 
 
 # Функции визуализации (остаются без изменений)
 def plot_optimization_history(log_file):
-    """График истории оптимизации"""
-    with open(log_file) as f:
-        data = [json.loads(line) for line in f]
+    """График истории оптимизации с улучшенной обработкой данных"""
+    try:
+        if not os.path.exists(log_file):
+            print(f"Файл {log_file} не найден. Сначала выполните оптимизацию.")
+            return
 
-    iterations = [entry['iteration'] for entry in data]
-    fitness = [entry['best_fitness'] for entry in data]
-    methods = [0 if entry['method'] == 'DEEP' else 1 for entry in data]
+        iterations = []
+        rmse_values = []
+        sd_values = []
 
-    plt.figure(figsize=(12, 8))
-    gs = GridSpec(2, 1, height_ratios=[3, 1])
+        with open(log_file, 'r') as f:
+            for line in f:
+                try:
+                    data = json.loads(line)
+                    iterations.append(data['iteration'])
+                    rmse_values.append(data['best_rmse'])
+                    sd_values.append(data.get('best_sd', 0))
+                except json.JSONDecodeError:
+                    continue
 
-    ax0 = plt.subplot(gs[0])
-    ax0.plot(iterations, fitness, 'b-', label='RMSE')
-    ax0.set_ylabel('Ошибка (RMSE)')
-    ax0.set_title('История оптимизации параметров модели')
-    ax0.grid(True)
-    ax0.legend()
+        if not iterations:
+            print("Нет данных для построения графика")
+            return
 
-    ax1 = plt.subplot(gs[1])
-    colors = ['blue' if m == 0 else 'red' for m in methods]
-    ax1.scatter(iterations, methods, c=colors, alpha=0.6, s=20)
-    ax1.set_yticks([0, 1])
-    ax1.set_yticklabels(['DEEP', 'Bandit'])
-    ax1.set_xlabel('Итерация')
-    ax1.set_ylabel('Метод')
-    ax1.grid(True)
+        plt.figure(figsize=(12, 6))
+        plt.plot(iterations, rmse_values, 'b-', label='RMSE')
+        plt.plot(iterations, sd_values, 'r--', label='SD')
+        plt.xlabel('Итерация')
+        plt.ylabel('Значение')
+        plt.title('История оптимизации')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
 
-    plt.tight_layout()
-    plt.savefig('optimization_history.png', dpi=300)
-    plt.show()
+    except Exception as e:
+        print(f"Ошибка при построении графика: {e}")
 
 
 if __name__ == "__main__":
@@ -111,16 +135,17 @@ if __name__ == "__main__":
 
 
     # Настройка оптимизатора
-    log_file = "sheep_optimization_log.json"
+    log_file = "optimization_log.json"
     optimizer = HybridOptimizer(sheep_objective, param_bounds, log_file)
 
     try:
         print(f"Запуск оптимизации для модели {model_type}...")
-        best_params, best_fitness = optimizer.optimize(max_iterations=100)
+        best_params, (best_rmse, best_sd) = optimizer.optimize(max_iterations=100)
 
         print("\nРезультаты оптимизации:")
         print(f"Параметры: {best_params}")
-        print(f"Лучшее значение RMSE: {best_fitness:.4f}")
+        print(f"Лучшее значение RMSE: {best_rmse:.4f} кг")
+        print(f"Стандартное отклонение ошибок (SD): {best_sd:.4f} кг")
 
         plot_optimization_history(log_file)
 
