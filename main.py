@@ -7,9 +7,10 @@ from data_utils import generate_synthetic_data, load_breed_data
 from model_comparison import compare_models
 from matplotlib.gridspec import GridSpec
 
+from sheep_grow import plot_optimization_history
+
 
 def numpy_to_list(obj):
-    """Рекурсивно преобразует numpy массивы в списки для JSON сериализации"""
     if isinstance(obj, np.ndarray):
         return obj.tolist()
     elif isinstance(obj, (np.float32, np.float64)):
@@ -21,7 +22,6 @@ def numpy_to_list(obj):
     elif isinstance(obj, (list, tuple)):
         return [numpy_to_list(x) for x in obj]
     return obj
-
 
 def brody_model(params, age):
     A, B, k = params
@@ -86,94 +86,17 @@ def objective_function(params, target_weights, age_points, model_type="brody"):
         return float('inf'), float('inf')
 
 
-def plot_optimization_history(log_file):
-    try:
-        if not os.path.exists(log_file):
-            raise FileNotFoundError(f"File {log_file} not found.")
-
-        iterations = []
-        rmse_values = []
-        sd_values = []
-
-        with open(log_file, 'r') as f:
-            for line in f:
-                try:
-                    data = json.loads(line)
-                    iterations.append(data['iteration'])
-                    rmse_values.append(data['best_rmse'])
-                    if 'best_sd' in data:
-                        sd_values.append(data['best_sd'])
-                except json.JSONDecodeError:
-                    continue
-
-        plt.figure(figsize=(12, 6))
-        plt.plot(iterations, rmse_values, 'b-', label='RMSE')
-        if sd_values:
-            plt.plot(iterations, sd_values, 'r--', label='SD')
-        plt.xlabel('Iteration')
-        plt.ylabel('Value')
-        plt.title('Optimization History')
-        plt.legend()
-        plt.grid(True)
-        plt.savefig('optimization_history.png', dpi=300)
-        plt.show()
-    except Exception as e:
-        print(f"Error plotting optimization history: {e}")
-
-
-def plot_growth_curves(results, target_weights, age_points):
-    try:
-        plt.figure(figsize=(12, 8))
-        extended_ages = np.linspace(min(age_points), max(age_points), 100)
-
-        # Plot target weights
-        plt.scatter(age_points, target_weights, c='black', s=100,
-                    label='Target Data', zorder=5)
-
-        # Plot model curves
-        colors = plt.cm.tab10(np.linspace(0, 1, len(results)))
-        for (model_name, data), color in zip(results.items(), colors):
-            params = data['params']
-            if model_name == "brody":
-                curve = [brody_model(params, age) for age in extended_ages]
-            elif model_name == "gompertz":
-                curve = [gompertz_model(params, age) for age in extended_ages]
-            elif model_name == "logistic":
-                curve = [logistic_model(params, age) for age in extended_ages]
-            elif model_name == "negative_exponential":
-                curve = [negative_exponential_model(params[:2], age) for age in extended_ages]
-            elif model_name == "richards":
-                curve = [richards_model(params, age) for age in extended_ages]
-            elif model_name == "von_bertalanffy":
-                curve = [von_bertalanffy_model(params, age) for age in extended_ages]
-
-            plt.plot(extended_ages, curve, color=color, linewidth=2,
-                     label=f"{model_name} (RMSE={data['rmse']:.2f}, SD={data['sd']:.2f})")
-
-        plt.xlabel('Age (days)')
-        plt.ylabel('Weight (kg)')
-        plt.title('Sheep Growth Models Comparison')
-        plt.legend()
-        plt.grid(True)
-        plt.savefig('growth_curves_comparison.png', dpi=300)
-        plt.show()
-    except Exception as e:
-        print(f"Error plotting growth curves: {e}")
-
-
 def main():
     try:
-
         breed_name = "Santa_Ines"
         sex = "m"
-        age_points = np.array([1, 60, 180, 210, 360])  # Ensure this is numpy array
-
+        age_points = np.array([1, 60, 180, 210, 360])
 
         print("Loading data...")
         breed_data = load_breed_data(breed_name, sex)
         if not breed_data:
             breed_data = {'mean': [3.50, 13.50, 22.70, 24.80, 24.90],
-                          'std': [0.35, 1.35, 2.27, 2.48, 2.49]}
+                         'std': [0.35, 1.35, 2.27, 2.48, 2.49]}
             print(f"Using default data for {breed_name} {sex}")
 
         synthetic_data = generate_synthetic_data(
@@ -182,7 +105,6 @@ def main():
             n_samples=100
         )
         target_weights = np.mean(synthetic_data, axis=0)
-
 
         models_to_compare = {
             "brody": {
@@ -199,14 +121,13 @@ def main():
             }
         }
 
-
         results = {}
         for model_name, model_info in models_to_compare.items():
             print(f"\n=== Optimizing {model_name} model ===")
 
             optimizer = HybridOptimizer(
                 lambda params: objective_function(params, target_weights,
-                                                  age_points, model_name),
+                                                age_points, model_name),
                 model_info["bounds"],
                 log_file=f"optimization_{model_name}.json"
             )
@@ -229,14 +150,9 @@ def main():
 
             plot_optimization_history(f"optimization_{model_name}.json")
 
-
         print("\n=== Model Comparison ===")
         model_predictions = {name: data["predictions"] for name, data in results.items()}
         compare_models(model_predictions, target_weights)
-
-
-        plot_growth_curves(results, target_weights, age_points)
-
 
         with open("final_results.json", "w") as f:
             json.dump(numpy_to_list({
