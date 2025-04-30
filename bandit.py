@@ -17,8 +17,11 @@ class BernoulliBandit(Bandit):
             self.probas = probas
         self.best_proba = max(self.probas)
 
-    def generate_reward(self, i):
-        return 1 if np.random.random() < self.probas[i] else 0
-
-    def generate_reward(self, i):
-        return 1 if np.random.random() < self.probas[i] else 0
+    def generate_reward(self, i, reward=None):
+        """Измененный метод для поддержки внешних вознаграждений"""
+        if reward is None:
+            return 1 if np.random.random() < self.probas[i] else 0
+        else:
+            # Обновляем вероятность при получении внешнего вознаграждения
+            self.probas[i] = (self.probas[i] + reward) / 2
+            return reward
