@@ -90,4 +90,4 @@ def select(population, new_population, fitness, new_fitness):
         return selected_population, selected_fitness
     except Exception as e:
         print(f"Error in select: {str(e)}")
-        return population, fitness 
+        return population, fitness
