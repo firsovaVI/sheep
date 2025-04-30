@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def transform_u_to_q(u, param_bounds):
     try:
         q = np.zeros_like(u)
@@ -9,16 +10,41 @@ def transform_u_to_q(u, param_bounds):
             q[i] = alpha + beta * np.tanh(u[i])
         return q
     except Exception as e:
-        print(f"Error in transform_u_to_q: {e}")
+        print(f"Ошибка в transform_u_to_q: {e}")
         return np.zeros_like(u)
+
 
 def initialize_population(pop_size, param_bounds):
     try:
         num_params = len(param_bounds)
         return np.random.uniform(-1, 1, size=(pop_size, num_params))
     except Exception as e:
-        print(f"Error in initialize_population: {e}")
+        print(f"Ошибка в initialize_population: {e}")
         return np.random.uniform(-1, 1, size=(pop_size, 3))  # fallback
+
+
+def adapt_parameters(F, crossover_prob, population, fitness):
+    """
+    Улучшенная адаптация параметров
+    """
+    # Рассчитываем разнообразие популяции
+    diversity = np.mean(np.std(population, axis=0))
+
+    # Корректируем F на основе разнообразия
+    if diversity < 0.1:  # Популяция сходится
+        F *= 1.2  # Увеличиваем исследование
+    else:
+        F *= 0.9  # Фокусируемся на эксплуатации
+
+    # Корректируем вероятность кроссовера
+    avg_improvement = np.mean(np.maximum(0, fitness[:-1] - fitness[1:]))
+    if avg_improvement < 0.01:  # Стагнация
+        crossover_prob = min(0.9, crossover_prob * 1.1)
+    else:
+        crossover_prob = max(0.5, crossover_prob * 0.95)
+
+    return np.clip(F, 0.1, 1.0), np.clip(crossover_prob, 0.5, 0.9)
+
 
 def recombine(population, F, crossover_prob):
     try:
@@ -64,4 +90,4 @@ def select(population, new_population, fitness, new_fitness):
         return selected_population, selected_fitness
     except Exception as e:
         print(f"Error in select: {str(e)}")
-        return population, fitness
+        return population, fitness 
