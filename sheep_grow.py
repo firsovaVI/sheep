@@ -133,46 +133,39 @@ def objective_function(params, target_weights, model_type="brody"):
 
 
 def plot_optimization_history(log_file):
-    """График истории оптимизации"""
+    """Обновленная функция визуализации с отображением методов"""
     try:
-        # Проверяем существует ли файл
-        if not os.path.exists(log_file):
-            raise FileNotFoundError(f"Файл {log_file} не найден. Оптимизация не была выполнена.")
-
-        # Читаем данные из файла
-        with open(log_file, 'r') as f:
-            data = []
-            for line in f:
-                try:
-                    data.append(json.loads(line))
-                except json.JSONDecodeError:
-                    continue  # Пропускаем некорректные строки
+        with open(log_file) as f:
+            data = [json.loads(line) for line in f]
 
         if not data:
-            print("Нет данных для построения графика")
+            print("No data to plot")
             return
 
         iterations = [entry['iteration'] for entry in data]
-        fitness = [entry['best_rmse'] for entry in data]
-        methods = [0 if entry['method'] == 'DEEP' else 1 for entry in data]
+        rmse_values = [entry['best_rmse'] for entry in data]
+        methods = [entry.get('method', 'DEEP') for entry in data]
 
         plt.figure(figsize=(12, 8))
         gs = GridSpec(2, 1, height_ratios=[3, 1])
 
+        # График RMSE
         ax0 = plt.subplot(gs[0])
-        ax0.plot(iterations, fitness, 'b-', label='RMSE')
-        ax0.set_ylabel('Ошибка (RMSE)')
-        ax0.set_title('История оптимизации параметров модели')
+        colors = ['blue' if m == 'DEEP' else 'red' for m in methods]
+        ax0.scatter(iterations, rmse_values, c=colors, alpha=0.5, label='RMSE')
+        ax0.plot(iterations, rmse_values, 'k-', alpha=0.3)
+        ax0.set_ylabel('RMSE')
+        ax0.set_title('Optimization History')
         ax0.grid(True)
-        ax0.legend()
 
+        # График методов
         ax1 = plt.subplot(gs[1])
-        colors = ['blue' if m == 0 else 'red' for m in methods]
-        ax1.scatter(iterations, methods, c=colors, alpha=0.6, s=20)
+        method_num = [0 if m == 'DEEP' else 1 for m in methods]
+        ax1.scatter(iterations, method_num, c=colors, alpha=0.6)
         ax1.set_yticks([0, 1])
         ax1.set_yticklabels(['DEEP', 'Bandit'])
-        ax1.set_xlabel('Итерация')
-        ax1.set_ylabel('Метод')
+        ax1.set_xlabel('Iteration')
+        ax1.set_ylabel('Method')
         ax1.grid(True)
 
         plt.tight_layout()
@@ -180,7 +173,7 @@ def plot_optimization_history(log_file):
         plt.show()
 
     except Exception as e:
-        print(f"Ошибка при построении графика: {e}")
+        print(f"Error plotting: {e}")
 
 def plot_growth_curve_comparison(best_params, target_weights, model_type="brody"):
     """Сравнение реальных и предсказанных кривых роста"""
