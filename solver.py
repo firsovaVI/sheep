@@ -110,7 +110,7 @@ class ThompsonSampling(Solver):
     def run_one_step(self):
         samples = [np.random.beta(self._as[x], self._bs[x]) for x in range(self.bandit.n)]
         i = max(range(self.bandit.n), key=lambda x: samples[x])
-        r = self.bandit.generate_reward(i)
+        r = self.bandit.generate_reward(i)  # Теперь без передачи reward здесь
         self._as[i] += r
         self._bs[i] += (1 - r)
         return i
