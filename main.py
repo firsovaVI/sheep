@@ -3,12 +3,22 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 from optimizer import HybridOptimizer
-from data_utils import generate_synthetic_data, load_breed_data
+from data_utils import generate_synthetic_data, load_breed_data, save_synthetic_data_to_json
 from model_comparison import compare_models
 from matplotlib.gridspec import GridSpec
 
 from sheep_grow import plot_optimization_history
+breed_data = load_breed_data("Santa_Ines", "m")
+synthetic_data = generate_synthetic_data(
+    breed_data['mean'],
+    breed_data['std'],
+    n_samples=100
+)
 
+# Сохраняем синтетические данные
+save_synthetic_data_to_json(synthetic_data, "synthetic_santa_ines_m.json")
+
+target_weights = np.mean(synthetic_data, axis=0)
 
 def numpy_to_list(obj):
     if isinstance(obj, np.ndarray):
