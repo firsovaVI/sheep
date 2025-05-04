@@ -1,14 +1,115 @@
 # sheep
-![image](https://github.com/user-attachments/assets/27afb91a-74ee-4251-9f05-626b8e1813eb)
-![image](https://github.com/user-attachments/assets/d56a8e79-d31b-4645-a179-48c5aa120c58)
-![image](https://github.com/user-attachments/assets/a71597a8-3e32-4d46-a9ab-876cdae6654a)
-![image](https://github.com/user-attachments/assets/267d19bf-2653-46ed-bffd-f43875ae3469)
-![image](https://github.com/user-attachments/assets/b8a102af-f713-4489-91d1-05a3859309ec)
-![image](https://github.com/user-attachments/assets/01dbd930-2949-4674-86c5-e66dfbf938ff)
-![image](https://github.com/user-attachments/assets/e2458ef7-7b86-47cb-9969-e75c1f0ccbe8)
-![image](https://github.com/user-attachments/assets/b40c0e6d-8a2a-4d9f-8c2a-f39b2a56ae53)
+![image](https://github.com/user-attachments/assets/218843ad-fd5e-456d-8e30-920609a45abc)
+![image](https://github.com/user-attachments/assets/50ff141e-e00f-4591-8653-6f682e144a98)
+![image](https://github.com/user-attachments/assets/684d6ff6-2ec8-4740-acd2-5a3703fa5d18)
+## === Optimizing brody model ===
+Iter 10: Method=Bandit | RMSE=1.6909 | Best params=[2.40335524e+01 7.99247416e-01 1.43111986e-02]
+Iter 20: Method=DEEP | RMSE=0.6815 | Best params=[2.63083901e+01 9.05129822e-01 1.06187457e-02]
+Iter 30: Method=DEEP | RMSE=0.6307 | Best params=[2.65678716e+01 8.88538353e-01 1.03848099e-02]
+Iter 40: Method=DEEP | RMSE=0.6307 | Best params=[2.65678716e+01 8.88538353e-01 1.03848099e-02]
+Iter 50: Method=DEEP | RMSE=0.6250 | Best params=[2.64819482e+01 8.84181412e-01 1.03576909e-02]
 
+### Results for brody:
+Parameters: [2.64819482e+01 8.84181412e-01 1.03576909e-02]
+RMSE: 0.6250 kg
+Standard deviation: 0.6249 kg
 
+### === Optimizing gompertz model ===
+Iter 10: Method=Bandit | RMSE=0.6846 | Best params=[2.43584552e+01 2.04453397e+00 2.07282630e-02]
+Iter 20: Method=DEEP | RMSE=0.4389 | Best params=[2.54746578e+01 1.96008199e+00 1.83761658e-02]
+Iter 30: Method=DEEP | RMSE=0.4389 | Best params=[2.54746578e+01 1.96008199e+00 1.83761658e-02]
+Iter 40: Method=DEEP | RMSE=0.4110 | Best params=[2.52435106e+01 1.96008199e+00 1.83761658e-02]
+Iter 50: Method=DEEP | RMSE=0.4103 | Best params=[2.53063747e+01 1.99414763e+00 1.85016884e-02]
+
+### Results for gompertz:
+Parameters: [2.53063747e+01 1.99414763e+00 1.85016884e-02]
+RMSE: 0.4103 kg
+Standard deviation: 0.4102 kg
+
+### === Optimizing logistic model ===
+Iter 10: Method=Bandit | RMSE=0.7103 | Best params=[24.79263595  4.96480978  0.02718298]
+Iter 20: Method=DEEP | RMSE=0.7103 | Best params=[24.79263595  4.96480978  0.02718298]
+Iter 30: Method=DEEP | RMSE=0.6909 | Best params=[24.69498892  4.96664231  0.0281227 ]
+Iter 40: Method=Bandit | RMSE=0.6888 | Best params=[24.62899445  4.99468921  0.02849223]
+Iter 50: Method=Bandit | RMSE=0.6878 | Best params=[24.69449502  4.99954392  0.028332  ]
+
+### Results for logistic:
+Parameters: [24.69449502  4.99954392  0.028332  ]
+RMSE: 0.6878 kg
+Standard deviation: 0.6831 kg
+
+=== Model Comparison ===
+
+Расчет бутстреп-доверительных интервалов...
+
+## === ОСНОВНЫЕ СТАТИСТИКИ МОДЕЛЕЙ ===
+
+### Модель: brody
+--------------------------------
+Средняя ошибка: 0.5125
+95% доверительный интервал: [0.2207, 0.8041]
+Стандартное отклонение: 0.3576
+Медианная ошибка: 0.6388
+Межквартильный размах: 0.2291 - 0.6678
+Минимальная ошибка: 0.0041
+Максимальная ошибка: 1.0230
+
+### Модель: gompertz
+--------------------------------
+Средняя ошибка: 0.2926
+95% доверительный интервал: [0.0531, 0.5417]
+Стандартное отклонение: 0.2876
+Медианная ошибка: 0.1483
+Межквартильный размах: 0.0358 - 0.5544
+Минимальная ошибка: 0.0099
+Максимальная ошибка: 0.7148
+
+### Модель: logistic
+--------------------------------
+Средняя ошибка: 0.6363
+95% доверительный интервал: [0.4435, 0.8938]
+Стандартное отклонение: 0.2612
+Медианная ошибка: 0.5618
+Межквартильный размах: 0.4683 - 0.6767
+Минимальная ошибка: 0.3596
+Максимальная ошибка: 1.1151
+
+## === СТАТИСТИЧЕСКИЕ СРАВНЕНИЯ МОДЕЛЕЙ ===
+### Уровень значимости alpha = 0.05
+
+## Парные t-тесты Стьюдента для зависимых выборок:
+
+### Сравнение brody vs gompertz:
+t-статистика = 0.9002
+p-value = 0.418913
+Различия не достигли уровня статистической значимости
+
+### Сравнение brody vs logistic:
+t-статистика = -0.4178
+p-value = 0.697549
+Различия не достигли уровня статистической значимости
+
+### Сравнение gompertz vs logistic:
+t-статистика = -2.6470
+p-value = 0.057162
+Различия не достигли уровня статистической значимости
+
+## Непараметрические тесты Вилкоксона для зависимых выборок:
+
+### Сравнение brody vs gompertz:
+W-статистика = 5.0000
+p-value = 0.625000
+Различия не достигли уровня статистической значимости
+
+### Сравнение brody vs logistic:
+W-статистика = 7.0000
+p-value = 1.000000
+Различия не достигли уровня статистической значимости
+
+### Сравнение gompertz vs logistic:
+W-статистика = 1.0000
+p-value = 0.125000
+Различия не достигли уровня статистической значимости
 
 
 
