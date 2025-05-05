@@ -8,6 +8,8 @@ from model_comparison import compare_models
 from matplotlib.gridspec import GridSpec
 
 from sheep_grow import plot_optimization_history
+
+# Загрузка и генерация данных
 breed_data = load_breed_data("Santa_Ines", "m")
 synthetic_data = generate_synthetic_data(
     breed_data['mean'],
@@ -18,7 +20,6 @@ synthetic_data = generate_synthetic_data(
 # Сохраняем синтетические данные
 save_synthetic_data_to_json(synthetic_data, "synthetic_santa_ines_m.json")
 
-target_weights = np.mean(synthetic_data, axis=0)
 
 def numpy_to_list(obj):
     if isinstance(obj, np.ndarray):
@@ -32,6 +33,7 @@ def numpy_to_list(obj):
     elif isinstance(obj, (list, tuple)):
         return [numpy_to_list(x) for x in obj]
     return obj
+
 
 def brody_model(params, age):
     A, B, k = params
@@ -63,34 +65,43 @@ def von_bertalanffy_model(params, age):
     return A * (1 - B * np.exp(-k * age)) ** 3
 
 
-def objective_function(params, target_weights, age_points, model_type="brody"):
+def objective_function(params, synthetic_data, age_points, model_type="brody"):
     try:
-        predicted_weights = []
+        total_rmse = 0
+        total_sd = 0
         params = np.array(params)
 
-        for age in age_points:
-            if model_type == "brody":
-                predicted = brody_model(params, age)
-            elif model_type == "gompertz":
-                predicted = gompertz_model(params, age)
-            elif model_type == "logistic":
-                predicted = logistic_model(params, age)
-            elif model_type == "negative_exponential":
-                predicted = negative_exponential_model(params, age)
-            elif model_type == "richards":
-                predicted = richards_model(params, age)
-            elif model_type == "von_bertalanffy":
-                predicted = von_bertalanffy_model(params, age)
-            else:
-                raise ValueError(f"Unknown model type: {model_type}")
+        # Обрабатываем все наборы данных
+        for weights in synthetic_data:
+            predicted_weights = []
 
-            predicted_weights.append(predicted)
+            for age in age_points:
+                if model_type == "brody":
+                    predicted = brody_model(params, age)
+                elif model_type == "gompertz":
+                    predicted = gompertz_model(params, age)
+                elif model_type == "logistic":
+                    predicted = logistic_model(params, age)
+                elif model_type == "negative_exponential":
+                    predicted = negative_exponential_model(params, age)
+                elif model_type == "richards":
+                    predicted = richards_model(params, age)
+                elif model_type == "von_bertalanffy":
+                    predicted = von_bertalanffy_model(params, age)
+                else:
+                    raise ValueError(f"Unknown model type: {model_type}")
 
-        errors = np.array(predicted_weights) - np.array(target_weights)
-        rmse = np.sqrt(np.mean(errors ** 2))
-        sd = np.std(errors)
+                predicted_weights.append(predicted)
 
-        return rmse, sd
+            errors = np.array(predicted_weights) - np.array(weights)
+            total_rmse += np.sqrt(np.mean(errors ** 2))
+            total_sd += np.std(errors)
+
+        # Усредняем ошибки по всем наборам данных
+        avg_rmse = total_rmse / len(synthetic_data)
+        avg_sd = total_sd / len(synthetic_data)
+
+        return avg_rmse, avg_sd
     except Exception as e:
         print(f"Error in objective_function: {str(e)}")
         return float('inf'), float('inf')
@@ -106,7 +117,7 @@ def main():
         breed_data = load_breed_data(breed_name, sex)
         if not breed_data:
             breed_data = {'mean': [3.50, 13.50, 22.70, 24.80, 24.90],
-                         'std': [0.35, 1.35, 2.27, 2.48, 2.49]}
+                          'std': [0.35, 1.35, 2.27, 2.48, 2.49]}
             print(f"Using default data for {breed_name} {sex}")
 
         synthetic_data = generate_synthetic_data(
@@ -114,7 +125,6 @@ def main():
             breed_data['std'],
             n_samples=100
         )
-        target_weights = np.mean(synthetic_data, axis=0)
 
         models_to_compare = {
             "brody": {
@@ -136,21 +146,24 @@ def main():
             print(f"\n=== Optimizing {model_name} model ===")
 
             optimizer = HybridOptimizer(
-                lambda params: objective_function(params, target_weights,
-                                                age_points, model_name),
+                lambda params: objective_function(params, synthetic_data,
+                                                  age_points, model_name),
                 model_info["bounds"],
                 log_file=f"optimization_{model_name}.json"
             )
 
             best_params, (best_rmse, best_sd) = optimizer.optimize(max_iterations=50)
 
+            # Для визуализации используем средние предсказания
+            avg_predictions = np.mean(
+                [model_info["function"](best_params, age) for age in age_points]
+            )
+
             results[model_name] = {
                 "params": numpy_to_list(best_params),
                 "rmse": float(best_rmse),
                 "sd": float(best_sd),
-                "predictions": numpy_to_list(
-                    [model_info["function"](best_params, age) for age in age_points]
-                )
+                "predictions": numpy_to_list(avg_predictions)
             }
 
             print(f"\nResults for {model_name}:")
@@ -162,14 +175,16 @@ def main():
 
         print("\n=== Model Comparison ===")
         model_predictions = {name: data["predictions"] for name, data in results.items()}
-        compare_models(model_predictions, target_weights)
+
+        # Для сравнения моделей используем средние значения синтетических данных
+        compare_models(model_predictions, np.mean(synthetic_data, axis=0))
 
         with open("final_results.json", "w") as f:
             json.dump(numpy_to_list({
                 "breed": breed_name,
                 "sex": sex,
                 "age_points": age_points,
-                "target_weights": target_weights,
+                "synthetic_data": numpy_to_list(synthetic_data),
                 "results": results
             }), f, indent=4)
 
